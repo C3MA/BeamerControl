@@ -1,0 +1,4 @@
+-- Tell the chip to connect to thi access point
+wifi.setmode(wifi.STATION)
+wifi.sta.config("SSID","password")
+mqttIP="IP address of Mqtt Server"
