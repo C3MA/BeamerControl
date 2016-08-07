@@ -75,6 +75,7 @@ function configureMqttService(c)
 end
 
 -- Current state, if there is someone using the beamer
+mBeamerUsedTmr=0
 mBeamerUsed=false
 
 -- Inform about connecting devices
@@ -83,22 +84,28 @@ function configureInputCheck()
     -- Check the resolution in order to find a client
     uart.write(0, "* 0 IR 036\r\r")
   end)
+  
   uart.on("data",4, function(data)
-    netPrint ("used is " .. tostring(mBeamerUsed) .. "; Received via RS232 :" .. data)
+    netPrint (tostring(tmr.now() / 1000) .. "; used is " .. tostring(mBeamerUsed) .. "; Received via RS232 :" .. data)
     if (string.match(data, "Res")) then
-     if ( mBeamerUsed == false) then
-      tmr.alarm(4, 200, 0, function()
-        m:publish("/room/beamer/state", "used", 0, 0)
-        mBeamerUsed=true
-      end)
-     end
+     mBeamerUsedTmr = (tmr.now() / 1000)
     else
-     if ( mBeamerUsed == true) then
-      -- When there is no 'Res' received after 3 seconds (1 sec longer than the intervall!)
-      tmr.alarm(4, 3000, 0, function()
-        m:publish("/room/beamer/state", "unused", 0, 0)
-        mBeamerUsed=false
-      end)
+     currentTmr = (tmr.now() / 1000)
+     -- When there was no res found in the last 10 Seconds, the Uses seems to be disconnected
+     if ((currentTmr - mBeamerUsedTmr) > 10000) then
+      if (mBeamerUsed == true) then
+       tmr.alarm(4, 200, 0, function()
+        m:publish("/room/beamer/state", "unused", 0, 0)        
+       end)
+       mBeamerUsed=false
+      end
+     else
+      if (mBeamerUsed == false) then   
+       tmr.alarm(4, 200, 0, function()
+        m:publish("/room/beamer/state", "used", 0, 0)        
+       end)
+       mBeamerUsed=true
+      end
      end
     end
   end, 0)
