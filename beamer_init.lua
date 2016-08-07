@@ -6,7 +6,7 @@ global_c=nil
 function netPrint(str)
   if global_c~=nil then
     global_c:send(str)
-    global_c:send("\\\n")
+    global_c:send("\n")
   end
 end
 
@@ -38,7 +38,7 @@ function configureMqttService(c)
     m:on("connect", function(con) 
         netPrint ("MQTT connected") 
         configureInputCheck()
-        m:publish("/room/beamer/ip",wifi.sta.getip(),0,0, function(conn) netPrint("Sent IP") end)
+        m:publish("/room/beamer/ip",wifi.sta.getip(), 0, 0)
     end)
     m:on("offline", function(con) 
         netPrint ("MQTT offline") 
@@ -46,9 +46,8 @@ function configureMqttService(c)
     end)
 
     m:on("message", function(conn, topic, data)
-      netPrint(topic .. ":" )
       if ((data ~= nil) and (topic == "/room/beamer/command")) then
-        --netPrint(topic .. ":" .. data)
+        netPrint(topic .. ":" .. data)
         if data == "OFF" then
           netPrint ("Shutdown beamer")
           uart.write(0, "* 0 IR 002\r\r")
@@ -75,6 +74,9 @@ function configureMqttService(c)
     end
 end
 
+-- Current state, if there is someone using the beamer
+mBeamerUsed=false
+
 -- Inform about connecting devices
 function configureInputCheck()
   tmr.alarm(3, 2000, 1, function()
@@ -82,10 +84,22 @@ function configureInputCheck()
     uart.write(0, "* 0 IR 036\r\r")
   end)
   uart.on("data",4, function(data)
+    netPrint ("used is " .. tostring(mBeamerUsed) .. "; Received via RS232 :" .. data)
     if (string.match(data, "Res")) then
-     tmr.alarm(4, 200, 0, function()
+     if ( mBeamerUsed == false) then
+      tmr.alarm(4, 200, 0, function()
         m:publish("/room/beamer/state", "used", 0, 0)
-     end) 
+        mBeamerUsed=true
+      end)
+     end
+    else
+     if ( mBeamerUsed == true) then
+      -- When there is no 'Res' received after 3 seconds (1 sec longer than the intervall!)
+      tmr.alarm(4, 3000, 0, function()
+        m:publish("/room/beamer/state", "unused", 0, 0)
+        mBeamerUsed=false
+      end)
+     end
     end
   end, 0)
 end
