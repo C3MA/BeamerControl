@@ -42,6 +42,7 @@ def sendCmd(s, message, cleaningEnter=False):
         print "ERROR, received : " + reply
         return False
 
+
 def main(nodeip, luafile, nodefile):
     if ( not os.path.isfile(luafile) ):
         print "The file " + luafile + " is not available"
@@ -62,6 +63,8 @@ def main(nodeip, luafile, nodefile):
 
 	    # Activate the commandline
 	    sendCmd(s, "node.output(s_output, 0)")
+	    # Deactivate UART
+	    sendCmd(s, "uart.on(\"data\")")
 
             # Communication tests
             if ( not sendRecv(s, "print(12345)", "12345") ):
