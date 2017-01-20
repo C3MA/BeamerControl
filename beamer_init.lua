@@ -1,5 +1,5 @@
 -- beamer_init.lua file for the beamer control
-print("Booting... Beamer v0.91")
+print("Booting... Beamer v0.92")
 dofile("wlancfg.lua")
 
 global_c=nil
@@ -37,6 +37,7 @@ m = mqtt.Client("beamer", 120, "", "")
 function configureMqttService(c)
     m:on("connect", function(con) 
         netPrint ("MQTT connected") 
+        startupStage = "mqtt-connected"
         configureInputCheck()
         m:publish("/room/beamer/ip",wifi.sta.getip(), 0, 0)
     end)
@@ -77,6 +78,7 @@ end
 -- Current state, if there is someone using the beamer
 mBeamerUsedTmr=0
 mBeamerUsed=false
+startupStage="wlan-setup"
 
 -- Inform about connecting devices
 function configureInputCheck()
@@ -111,16 +113,27 @@ function configureInputCheck()
   end, 0)
 end
 
-tmr.alarm(1, 1000, 1, function() 
+tmr.alarm(1, 1000, 1, function()
+ if startupStage == "wlan-setup" then
    if wifi.sta.getip()=="0.0.0.0" or wifi.sta.getip() == nil then
       --print("Connect AP, Waiting...") 
    else
       --print("Connected")
       --print( wifi.sta.getip() )
+startupStage = "mqtt-setup"
       startTelnetServer()
       configureMqttService()
-      tmr.stop(1)
    end
+ else
+   if (startupStage == "mqtt-connected") then
+    tmr.stop(1)
+   end  
+ end
+ if (tmr.now() / 1000000) > 60 then
+    netPrint("Startup failed -> Rebooting")
+    node.restart()
+  end
+
 end)
 
 uart.setup(0,9600,8,0,1,0)
