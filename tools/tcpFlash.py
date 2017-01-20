@@ -60,6 +60,9 @@ def main(nodeip, luafile, nodefile):
                 s.close()
                 sys.exit(2)
 
+	    # Activate the commandline
+	    sendCmd(s, "node.output(s_output, 0)")
+
             # Communication tests
             if ( not sendRecv(s, "print(12345)", "12345") ):
                 print "NOT communicating with an ESP8266 running LUA (nodemcu) firmware"
@@ -68,7 +71,9 @@ def main(nodeip, luafile, nodefile):
             
             print "Flashing " + luafile + " as " + nodefile
             sendCmd(s, "file.remove(\"" + nodefile+"\");", True)
+	    time.sleep(0.200)
             sendCmd(s, "w= file.writeline", True)
+	    time.sleep(0.200)
             sendCmd(s, "file.open(\"" + nodefile + "\",\"w+\");", True)
             with open(luafile) as f:
                 contents = f.readlines()
