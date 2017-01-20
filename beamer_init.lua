@@ -77,7 +77,9 @@ end
 
 -- Current state, if there is someone using the beamer
 mBeamerUsedTmr=0
-mBeamerUsed=false
+-- must be true, so the inital published state is unused
+mBeamerUsed=true
+
 startupStage="wlan-setup"
 
 -- Inform about connecting devices
@@ -120,7 +122,7 @@ tmr.alarm(1, 1000, 1, function()
    else
       --print("Connected")
       --print( wifi.sta.getip() )
-startupStage = "mqtt-setup"
+      startupStage = "mqtt-setup"
       startTelnetServer()
       configureMqttService()
    end
