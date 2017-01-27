@@ -1,5 +1,5 @@
 -- beamer_init.lua file for the beamer control
-print("Booting... Beamer v0.92")
+print("Booting... Beamer v0.93")
 dofile("wlancfg.lua")
 
 global_c=nil
@@ -75,8 +75,6 @@ function configureMqttService(c)
     end
 end
 
--- Current state, if there is someone using the beamer
-mBeamerUsedTmr=0
 -- must be true, so the inital published state is unused
 mBeamerUsed=true
 
@@ -92,27 +90,20 @@ function configureInputCheck()
   uart.on("data",4, function(data)
     netPrint (tostring(tmr.now() / 1000) .. "; used is " .. tostring(mBeamerUsed) .. "; Received via RS232 :" .. data)
     if (string.match(data, "Res")) then
-     mBeamerUsedTmr = (tmr.now() / 1000)
-    else
-     currentTmr = (tmr.now() / 1000)
-     -- When there was no res found in the last 10 Seconds, the Uses seems to be disconnected
-     if ((currentTmr - mBeamerUsedTmr) > 10000) then
-      if (mBeamerUsed == true) then
-       tmr.alarm(4, 200, 0, function()
-        m:publish("/room/beamer/state", "unused", 0, 0)        
-       end)
-       mBeamerUsed=false
-      end
-     else
-      if (mBeamerUsed == false) then   
-       tmr.alarm(4, 200, 0, function()
+     tmr.alarm(4, 200, 0, function()
         m:publish("/room/beamer/state", "used", 0, 0)        
+     end)
+     -- last 10 Seconds, the Uses seems to be disconnected
+     tmr.alarm(5, 10000, 0, function()
+       -- When there was no res found in the last 10 Seconds, the Uses seems to be disconnected
+       tmr.alarm(4, 200, 0, function()
+         m:publish("/room/beamer/state", "unused", 0, 0)        
        end)
-       mBeamerUsed=true
-      end
-     end
+       -- The timer will be activated each time "Res" is found on UART
+     end)
+     mBeamerUsedTmr = (tmr.now() / 1000)
     end
-  end, 0)
+   end, 0)
 end
 
 tmr.alarm(1, 1000, 1, function()
