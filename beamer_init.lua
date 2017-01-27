@@ -76,7 +76,7 @@ function configureMqttService(c)
 end
 
 -- must be true, so the inital published state is unused
-mBeamerUsed=true
+mBeamerUsed=false
 
 startupStage="wlan-setup"
 
