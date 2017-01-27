@@ -85,7 +85,7 @@ def main(nodeip, luafile, nodefile):
                     print "\rSending " + str(i) + "/" + str(len(contents)) + " ...",
                     sys.stdout.flush() # Update something to the user
                     l = line.rstrip()
-                    if (not sendCmd(s, "w([[" + l + "]]);")):
+                    if (not sendCmd(s, "w([==[" + l + "]==]);")):
                         print "Cannot write line " + str(i)
                         s.close()
                         sys.exit(4)
